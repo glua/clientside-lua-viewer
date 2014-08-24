@@ -49,7 +49,7 @@ local function GetLuaFileContents(crc)
 	return contents:sub(1, -2) -- Trim trailing null
 end
 
-local function dumpFile(path, contents)
+local function dumbFile(path, contents)
 	if not  path:match("%.txt$") then path = path..".txt" end
 	local curdir = ""
 	for t in path:gmatch("[^/\\*]+") do
@@ -61,6 +61,17 @@ local function dumpFile(path, contents)
 			curdir = curdir.."/"
 			print("Creating: ", curdir)
 			file.CreateDir(curdir)
+		end
+	end
+end
+
+local dumbFolderCache = ""
+local function dumbFolder(node)
+	for _, subnode in ipairs(node.ChildNodes:GetChildren()) do
+		if subnode:HasChildren() then
+			dumbFolder(subnode)
+		else
+			dumbFile(dumbFolderCache..subnode.pathh, GetLuaFileContents(subnode.CRC))
 		end
 	end
 end
@@ -120,6 +131,12 @@ function VIEWER:Init()
 		for k, v in SortedPairs(data) do
 			if type(v) == "table" and not v.CRC then
 				local new_node = node:AddNode(k)
+				new_node.DoRightClick = function()
+					local dmenu = DermaMenu(new_node)
+					dmenu:SetPos(gui.MouseX(), gui.MouseY())
+					dmenu:AddOption("dumb", function() dumbFolderCache = "dumbs/"..os.date("%d.%m.%y %H.%M").."/" dumbFolder(new_node) end)
+					dmenu:Open()
+				end
  
 				iterate(v, new_node, path .. k .. "/")
 			else
@@ -139,10 +156,11 @@ function VIEWER:Init()
 			node.DoRightClick = function()
 				local dmenu = DermaMenu(node)
 				dmenu:SetPos(gui.MouseX(), gui.MouseY())
-				dmenu:AddOption("dumb", function() dumpFile("dumbs/"..os.date("%d.%m.%y %H.%M").." "..v.fileN, GetLuaFileContents(v.CRC)) end)
+				dmenu:AddOption("dumb", function() dumbFile("dumbs/"..os.date("%d.%m.%y %H.%M").." "..v.fileN, GetLuaFileContents(v.CRC)) end)
 				dmenu:Open()
 			end
 			node.CRC = v.CRC
+			node.pathh = v.path
 	end
 
 end
