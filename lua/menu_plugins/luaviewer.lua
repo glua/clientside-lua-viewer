@@ -1,4 +1,5 @@
 require"stringtable" --all willox' stuff
+require"luamio"
 
 local javascript_escape_replacements = {
 	["\\"] = "\\\\",
@@ -30,8 +31,10 @@ local function GetLuaFiles(client_lua_files)
 	local ret = {}
 
 	for i = 1, count - 2 do
+		local path = client_lua_files:GetString(i)
+		--if file.Exists(path, "MOD") then continue end --skip files we already have (this also skips files that servers modify, but eh garry forgot to include util.CRC in menu state)
 		ret[i] = {
-			Path = client_lua_files:GetString(i),
+			Path = path,
 			CRC = client_lua_files:GetUserDataInt(i)
 		}
 	end
@@ -50,16 +53,16 @@ local function GetLuaFileContents(crc)
 end
 
 local function dumbFile(path, contents)
-	if not  path:match("%.txt$") then path = path..".txt" end
+	if not  path:match("%.lua$") then path = path..".lua" end
 	local curdir = ""
 	for t in path:gmatch("[^/\\*]+") do
 		curdir = curdir..t
-		if  curdir:match("%.txt$") then
-			print("writing: ", curdir)
-			file.Write(curdir, contents)
+		if  curdir:match("%.lua$") then
+			local f = io.open("garrysmod/data/"..curdir, "w+")
+			f:write(contents)
+			f:close()
 		else
 			curdir = curdir.."/"
-			print("Creating: ", curdir)
 			file.CreateDir(curdir)
 		end
 	end
@@ -105,10 +108,12 @@ function VIEWER:Init()
 	client_lua_files = stringtable.Get "client_lua_files"
 
 	local tree_data= {}
+
 	for i, v in ipairs(GetLuaFiles(client_lua_files)) do
 		if i == 1 then continue end
 		local file_name = string.match(v.Path, ".*/([^/]+%.lua)")
 		local dir_path = string.sub(v.Path, 1, -1 - file_name:len())
+
 		local file_crc = v.CRC
  
 		local cur_dir = tree_data
@@ -134,7 +139,15 @@ function VIEWER:Init()
 				new_node.DoRightClick = function()
 					local dmenu = DermaMenu(new_node)
 					dmenu:SetPos(gui.MouseX(), gui.MouseY())
-					dmenu:AddOption("dumb", function() dumbFolderCache = "dumbs/"..os.date("%d.%m.%y %H.%M").."/" dumbFolder(new_node) end)
+					dmenu:AddOption("dumb", function() 
+						dumbFolderCache = "dumbs/"..os.date("%d.%m.%y %H.%M").."/" 
+						print("Writing files...")
+						local start = CurTime() 
+
+						dumbFolder(new_node) 
+
+						print("Done writing files! Took "..CurTime() - start.." seconds")
+					end)
 					dmenu:Open()
 				end
  
