@@ -100,10 +100,24 @@ function VIEWER:Init()
 	self.tree:Dock(FILL)
 	self.tree.Directories = {}
 
-	self.html = vgui.Create("DHTML", self)
+	self.right = vgui.Create("PANEL", self)
+	self.right:Dock(FILL)
+
+	self.html = vgui.Create("DHTML", self.right)
 	self.html:Dock(FILL)
-	self.html:OpenURL("https://metastruct.github.io/lua_editor/") --thx metastruct
-	self.html:QueueJavascript("editor.setTheme('ace/theme/crimson_editor')")
+	self.html:SetAllowLua(true)
+	self.html:OpenURL("asset://garrysmod/lua/menu_plugins/luaviewer/index.html") --thx metastruct
+	self.html:AddFunction("gmodinterface", "OnCode", function(code) self.currentCode = code end)
+
+	self.override = vgui.Create("DButton", self.right)
+	self.override:Dock(BOTTOM)
+	self.override:SetTall(self.override:GetTall() * 1.5)
+	self.override:SetText("Override")
+	self.override.DoClick = function()
+		if not (self.currentPath or self.currentCode) then return end
+		dumbFile("overrides/"..self.currentPath, self.currentCode)
+		print("Overwrote "..self.currentPath)
+	end
 
 	client_lua_files = stringtable.Get "client_lua_files"
 
@@ -164,7 +178,8 @@ function VIEWER:Init()
 			local node = v.node:AddNode(v.fileN, "icon16/page.png")
  
 			node.DoClick = function()
-				self.html:QueueJavascript("SetContent('"..string.JavascriptSafe(GetLuaFileContents(v.CRC)).."')")
+				self.html:QueueJavascript("SetContent('"..string.JavascriptSafe(GetLuaFileContents(v.CRC)).."'); GotoLine(1);")
+				self.currentPath = v.path
 			end
 			node.DoRightClick = function()
 				local dmenu = DermaMenu(node)
