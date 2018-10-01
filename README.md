@@ -6,3 +6,6 @@ clientside-lua-viewer
 * And this [menu_plugins](https://github.com/gmodcoders/gmod-menu-plugins)
 
 If you want to be able to override cs files you also need this: [gm_roc](https://github.com/gmodcoders/gm_roc)
+
+## Warning
+This might count as cheating on some servers (especially the part about replacing cs files) and might get you banned.
